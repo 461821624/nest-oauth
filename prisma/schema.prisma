@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联
+  clients          Client[]          // 用户创建的客户端应用
+  authCodes        AuthCode[]        // 用户的授权码
+  accessTokens     AccessToken[]     // 用户的访问令牌
+  refreshTokens    RefreshToken[]    // 用户的刷新令牌
+}
+
+// OAuth 客户端应用模型
+model Client {
+  id           String   @id @default(uuid())
+  clientId     String   @unique
+  clientSecret String
+  name         String
+  redirectUris String[] // 允许的重定向URI
+  grants       String[] // 允许的授权类型
+  userId       String   // 创建该客户端的用户ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 关联
+  user          User           @relation(fields: [userId], references: [id])
+  authCodes     AuthCode[]     // 客户端的授权码
+  accessTokens  AccessToken[]  // 客户端的访问令牌
+  refreshTokens RefreshToken[] // 客户端的刷新令牌
+}
+
+// 授权码模型
+model AuthCode {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  userId    String
+  clientId  String
+  scope     String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // 关联
+  user   User   @relation(fields: [userId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}
+
+// 访问令牌模型
+model AccessToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  clientId  String
+  scope     String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // 关联
+  user   User   @relation(fields: [userId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}
+
+// 刷新令牌模型
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  clientId  String
+  scope     String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // 关联
+  user   User   @relation(fields: [userId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}

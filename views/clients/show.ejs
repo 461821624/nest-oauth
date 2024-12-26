@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>应用详情 - OAuth 2.0</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+            background-color: #007bff;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .info-group {
+            margin-bottom: 20px;
+        }
+        .info-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+        .info-group .value {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+            background-color: #e9ecef;
+        }
+        .uri-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .uri-list li {
+            padding: 5px 0;
+        }
+        .secret-container {
+            position: relative;
+        }
+        .secret-value {
+            font-family: monospace;
+        }
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><%= client.name %></h1>
+            <a href="/oauth/clients" class="btn">返回列表</a>
+        </div>
+
+        <div class="info-group">
+            <label>客户端ID</label>
+            <div class="value secret-container">
+                <span class="secret-value"><%= client.clientId %></span>
+                <button class="btn copy-btn" onclick="copyToClipboard(this, '<%= client.clientId %>')">复制</button>
+            </div>
+        </div>
+
+        <div class="info-group">
+            <label>客户端密钥</label>
+            <div class="value secret-container">
+                <span class="secret-value"><%= client.clientSecret %></span>
+                <button class="btn copy-btn" onclick="copyToClipboard(this, '<%= client.clientSecret %>')">复制</button>
+            </div>
+        </div>
+
+        <div class="info-group">
+            <label>授权类型</label>
+            <div class="value">
+                <% client.grants.forEach(grant => { %>
+                    <span class="badge"><%= grant %></span>
+                <% }) %>
+            </div>
+        </div>
+
+        <div class="info-group">
+            <label>重定向URI</label>
+            <div class="value">
+                <ul class="uri-list">
+                    <% client.redirectUris.forEach(uri => { %>
+                        <li><%= uri %></li>
+                    <% }) %>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-group">
+            <label>创建时间</label>
+            <div class="value">
+                <%= new Date(client.createdAt).toLocaleString() %>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(button, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('复制失败');
+            });
+        }
+    </script>
+</body>
+</html> 
