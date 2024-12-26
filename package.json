@@ -1,8 +1,8 @@
 {
   "name": "nest-oauth",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "这是一个基于 NestJS 框架实现的完整的 OAuth 2.0 授权服务器。",
+  "author": "461821624@qq.com",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

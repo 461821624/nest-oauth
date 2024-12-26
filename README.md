@@ -35,7 +35,7 @@
 
 1. 克隆项目
 ```bash
-git clone <repository-url>
+git clone https://github.com/461821624/nest-oauth.git
 cd nest-oauth
 ```
 
