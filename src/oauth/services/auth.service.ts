@@ -224,4 +224,93 @@ export class AuthService {
 
     return refreshToken;
   }
+
+  // 撤销令牌
+  async revokeToken(token: string, clientId: string, tokenTypeHint?: string): Promise<void> {
+    // 验证客户端
+    const client = await this.prisma.client.findFirst({
+      where: { clientId }
+    });
+
+    if (!client) {
+      throw new UnauthorizedException('Invalid client');
+    }
+
+    // 根据令牌类型提示查找并删除令牌
+    if (tokenTypeHint === 'refresh_token') {
+      await this.prisma.refreshToken.deleteMany({
+        where: {
+          token,
+          clientId: client.id
+        }
+      });
+    } else {
+      // 默认尝试删除访问令牌
+      await this.prisma.accessToken.deleteMany({
+        where: {
+          token,
+          clientId: client.id
+        }
+      });
+    }
+  }
+
+  // 获取令牌信息
+  async getTokenInfo(token: string): Promise<any> {
+    // 先查找访问令牌
+    const accessToken = await this.prisma.accessToken.findFirst({
+      where: { token },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        },
+        client: true
+      }
+    });
+
+    if (accessToken) {
+      return {
+        active: new Date() < accessToken.expiresAt,
+        scope: accessToken.scope,
+        client_id: accessToken.client.clientId,
+        username: accessToken.user.username,
+        exp: Math.floor(accessToken.expiresAt.getTime() / 1000),
+        token_type: 'access_token'
+      };
+    }
+
+    // 如果不是访问令牌，查找刷新令牌
+    const refreshToken = await this.prisma.refreshToken.findFirst({
+      where: { token },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true
+          }
+        },
+        client: true
+      }
+    });
+
+    if (refreshToken) {
+      return {
+        active: new Date() < refreshToken.expiresAt,
+        client_id: refreshToken.client.clientId,
+        username: refreshToken.user.username,
+        exp: Math.floor(refreshToken.expiresAt.getTime() / 1000),
+        token_type: 'refresh_token'
+      };
+    }
+
+    // 如果都没找到，返回令牌无效
+    return {
+      active: false
+    };
+  }
 } 

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Query, Render, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { AuthorizeDto, TokenDto, LoginDto, AuthorizeDecisionDto } from '../dto/oauth.dto';
+import { AuthorizeDto, TokenDto, LoginDto, AuthorizeDecisionDto, RevokeTokenDto, TokenInfoDto } from '../dto/oauth.dto';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
@@ -242,5 +242,32 @@ export class OAuthController {
       default:
         throw new UnauthorizedException('Invalid grant type');
     }
+  }
+
+  @ApiOperation({ summary: '撤销令牌' })
+  @ApiResponse({ status: 200, description: '令牌撤销成功' })
+  @ApiResponse({ status: 400, description: '令牌撤销失败' })
+  @Post('revoke')
+  async revokeToken(@Body() body: RevokeTokenDto) {
+    const { token, client_id, client_secret, token_type_hint } = body;
+
+    try {
+      // 验证客户端
+      await this.authService.validateClient(client_id, client_secret);
+      
+      // 撤销令牌
+      await this.authService.revokeToken(token, client_id, token_type_hint);
+      
+      return { message: 'Token revoked successfully' };
+    } catch (error) {
+      throw new UnauthorizedException('Token revocation failed');
+    }
+  }
+
+  @ApiOperation({ summary: '获取令牌信息' })
+  @ApiResponse({ status: 200, description: '获取令牌信息成功' })
+  @Post('introspect')
+  async getTokenInfo(@Body() body: TokenInfoDto) {
+    return this.authService.getTokenInfo(body.token);
   }
 } 

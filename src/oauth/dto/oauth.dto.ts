@@ -119,4 +119,33 @@ export class AuthorizeDecisionDto {
   @IsString()
   @IsOptional()
   scope?: string;
+}
+
+export class RevokeTokenDto {
+  @ApiProperty({ description: '要撤销的令牌', example: 'abc123xyz' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @ApiProperty({ description: '客户端ID', example: 'test-client' })
+  @IsString()
+  @IsNotEmpty()
+  client_id: string;
+
+  @ApiProperty({ description: '客户端密钥', example: 'test-secret' })
+  @IsString()
+  @IsNotEmpty()
+  client_secret: string;
+
+  @ApiProperty({ description: '令牌类型', enum: ['access_token', 'refresh_token'], example: 'access_token' })
+  @IsString()
+  @IsIn(['access_token', 'refresh_token'])
+  token_type_hint?: string;
+}
+
+export class TokenInfoDto {
+  @ApiProperty({ description: '要查询的令牌', example: 'abc123xyz' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
 } 

@@ -4,10 +4,38 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
+import * as session from 'express-session';
+import helmet from 'helmet';
+import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+import { ThrottlerOptions, ThrottlerStorageService } from '@nestjs/throttler';
+import { Reflector } from '@nestjs/core';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
+  // 启用 Helmet 安全头
+  app.use(helmet());
+
+  // 配置会话
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'my-secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 // 24小时
+      }
+    })
+  );
+
+  // 配置 CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    credentials: true
+  });
+
   // 配置 Swagger 文档
   const config = new DocumentBuilder()
     .setTitle('NestJS OAuth 2.0 API')
@@ -26,7 +54,25 @@ async function bootstrap() {
   app.setViewEngine('ejs');
 
   // 配置全局验证管道
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+    transformOptions: {
+      enableImplicitConversion: true
+    }
+  }));
+
+  // 配置全局速率限制守卫
+  const reflector = app.get(Reflector);
+  const storageService = app.get(ThrottlerStorageService);
+  const options: ThrottlerOptions[] = [{
+    limit: 10,
+    ttl: 60000,
+  }];
+
+  const throttlerGuard = new CustomThrottlerGuard(options, storageService, reflector);
+  app.useGlobalGuards(throttlerGuard);
 
   await app.listen(3000);
 }

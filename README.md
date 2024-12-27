@@ -23,7 +23,14 @@
 - 美观的用户界面
 - Swagger API 文档
 
-- 高级特性：
+- 高级安全特性：
+  - 速率限制（Rate Limiting）：
+    - 基于 IP 地址的请求限制
+    - 默认每个 IP 每分钟最多 10 个请求
+    - 可配置的限制时间和请求次数
+  - CSRF 保护
+  - Helmet 安全头
+  - 会话管理
   - 统一的响应格式
   - 全局异常处理
   - 请求日志记录
@@ -78,6 +85,9 @@ SWAGGER_ENABLED=true
 OAUTH_TOKEN_EXPIRES_IN=3600
 OAUTH_REFRESH_TOKEN_EXPIRES_IN=2592000
 OAUTH_AUTH_CODE_EXPIRES_IN=600
+
+# 会话配置
+SESSION_SECRET="your-session-secret-here"
 ```
 
 4. 初始化数据库
@@ -154,6 +164,8 @@ interface ErrorResponse {
 - `POST /oauth/token` - 令牌端点
 - `POST /oauth/login` - 用户登录
 - `POST /oauth/authorize/decision` - 用户授权决定
+- `POST /oauth/revoke` - 令牌撤销
+- `POST /oauth/introspect` - 令牌信息查询
 
 ### 应用管理端点
 
@@ -209,15 +221,28 @@ nest-oauth/
 
 ## 安全性考虑
 
-- 使用 bcrypt 加密用户密码
-- JWT 令牌加密
-- HTTPS 支持（生产环境）
-- CSRF 保护
-- XSS 防护
-- 请求速率限制
-- 输入验证和消毒
-- 安全的 HTTP 头部
-- 审计日志记录
+- 速率限制：
+  - 基于 IP 地址的请求限制
+  - 可配置的限制规则
+  - 防止暴力攻击
+- CSRF 保护：
+  - 所有表单请求的 CSRF 令牌验证
+  - 安全的令牌生成和验证
+- 安全头：
+  - 使用 Helmet 中间件
+  - XSS 防护
+  - 点击劫持防护
+  - 内容安全策略
+- 会话安全：
+  - 安全的会话配置
+  - HttpOnly Cookie
+  - 会话超时控制
+- 其他安全特性：
+  - bcrypt 密码加密
+  - JWT 令牌加密
+  - HTTPS 支持（生产环境）
+  - 输入验证和消毒
+  - 审计日志记录
 
 ## 性能优化
 
