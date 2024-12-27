@@ -21,6 +21,7 @@
 - JWT Token 支持
 - 数据持久化（PostgreSQL）
 - 美观的用户界面
+- Swagger API 文档
 
 ## 技术栈
 
@@ -30,6 +31,7 @@
 - EJS - 模板引擎
 - JWT - 令牌生成和验证
 - TypeScript - 开发语言
+- Swagger - API 文档
 
 ## 项目设置
 
@@ -69,6 +71,26 @@ pnpm run start:dev
 pnpm run build
 pnpm run start:prod
 ```
+
+## API 文档
+
+项目启动后，可以通过以下地址访问 Swagger API 文档：
+
+```
+http://localhost:3000/api
+```
+
+API 文档包含以下主要部分：
+- OAuth 2.0 认证相关接口
+- 客户端应用管理接口
+- 用户管理接口
+
+每个接口都包含：
+- 详细的接口说明
+- 请求参数说明
+- 响应数据格式
+- 认证要求
+- 在线测试功能
 
 ## API 端点
 
@@ -132,7 +154,6 @@ nest-oauth/
 - HTTPS 支持（生产环境）
 - CSRF 保护
 - XSS 防护
-
 
 ## 许可证
 

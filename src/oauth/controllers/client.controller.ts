@@ -2,11 +2,15 @@ import { Controller, Get, Post, Delete, Param, Body, Render } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClientDto } from '../dto/client.dto';
 import * as bcrypt from 'bcrypt';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
+@ApiTags('clients')
 @Controller('oauth/clients')
 export class ClientController {
   constructor(private prisma: PrismaService) {}
 
+  @ApiOperation({ summary: '初始化测试用户' })
+  @ApiResponse({ status: 200, description: '测试用户创建成功' })
   @Get('init')
   async initTestUser() {
     try {
@@ -36,6 +40,8 @@ export class ClientController {
     }
   }
 
+  @ApiOperation({ summary: '获取应用列表' })
+  @ApiResponse({ status: 200, description: '获取应用列表成功' })
   @Get()
   @Render('clients/index')
   async index() {
@@ -56,12 +62,17 @@ export class ClientController {
     }
   }
 
+  @ApiOperation({ summary: '创建新应用页面' })
+  @ApiResponse({ status: 200, description: '返回创建新应用的页面' })
   @Get('new')
   @Render('clients/new')
   new() {
     return { error: null };
   }
 
+  @ApiOperation({ summary: '创建新应用' })
+  @ApiResponse({ status: 201, description: '应用创建成功' })
+  @ApiResponse({ status: 400, description: '创建应用失败' })
   @Post()
   async create(@Body() createClientDto: CreateClientDto) {
     try {
@@ -91,6 +102,10 @@ export class ClientController {
     }
   }
 
+  @ApiOperation({ summary: '获取应用详情' })
+  @ApiParam({ name: 'id', description: '应用ID' })
+  @ApiResponse({ status: 200, description: '获取应用详情成功' })
+  @ApiResponse({ status: 404, description: '应用不存在' })
   @Get(':id')
   @Render('clients/show')
   async show(@Param('id') id: string) {
@@ -103,6 +118,10 @@ export class ClientController {
     return { client };
   }
 
+  @ApiOperation({ summary: '删除应用' })
+  @ApiParam({ name: 'id', description: '应用ID' })
+  @ApiResponse({ status: 200, description: '应用删除成功' })
+  @ApiResponse({ status: 404, description: '应用不存在' })
   @Delete(':id')
   async delete(@Param('id') id: string) {
     try {
