@@ -75,6 +75,7 @@ cp .env.example .env
 ```bash
 pnpm prisma generate
 pnpm prisma db push
+http://localhost:3001/oauth/init #初始化测试数据
 ```
 
 5. 启动开发服务器
