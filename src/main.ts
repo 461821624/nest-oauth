@@ -6,15 +6,17 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import * as session from 'express-session';
 import helmet from 'helmet';
-import { CustomThrottlerGuard } from './common/guards/throttler.guard';
-import { ThrottlerOptions, ThrottlerStorageService } from '@nestjs/throttler';
-import { Reflector } from '@nestjs/core';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
-  // 启用 Helmet 安全头
-  app.use(helmet());
+  // 启用 Helmet 安全头，在开发环境中禁用 CSP
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    })
+  );
 
   // 配置会话
   app.use(
@@ -62,17 +64,6 @@ async function bootstrap() {
       enableImplicitConversion: true
     }
   }));
-
-  // 配置全局速率限制守卫
-  const reflector = app.get(Reflector);
-  const storageService = app.get(ThrottlerStorageService);
-  const options: ThrottlerOptions[] = [{
-    limit: 10,
-    ttl: 60000,
-  }];
-
-  const throttlerGuard = new CustomThrottlerGuard(options, storageService, reflector);
-  app.useGlobalGuards(throttlerGuard);
 
   await app.listen(3000);
 }

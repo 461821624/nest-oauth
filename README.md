@@ -17,39 +17,42 @@
   - 查看应用详情
   - 删除应用
 
-- 用户认证和授权
-- JWT Token 支持
-- 数据持久化（PostgreSQL）
-- 美观的用户界面
-- Swagger API 文档
-
 - 高级安全特性：
   - 速率限制（Rate Limiting）：
     - 基于 IP 地址的请求限制
     - 默认每个 IP 每分钟最多 10 个请求
     - 可配置的限制时间和请求次数
-  - CSRF 保护
-  - Helmet 安全头
-  - 会话管理
-  - 统一的响应格式
-  - 全局异常处理
-  - 请求日志记录
-  - 灵活的配置系统
-  - CORS 支持
-  - 请求速率限制
-  - 响应缓存
+  - 安全头配置（Helmet）：
+    - 开发环境：禁用 CSP 以方便调试
+    - 生产环境：完整的安全头配置
+    - 跨站脚本保护（XSS）
+    - 点击劫持保护
+  - CORS 配置：
+    - 允许指定源访问（默认 localhost:3001）
+    - 支持凭证请求
+  - 会话管理：
+    - 安全的会话配置
+    - 24小时会话过期
+    - HttpOnly cookie
+  - 输入验证：
+    - 全局验证管道
+    - 数据转换和清理
+    - 白名单验证
 
-## 技术栈
+- 开发者友好：
+  - Swagger API 文档
+  - 美观的用户界面
+  - TypeScript 支持
+  - 热重载开发
+  - 详细的错误处理
 
-- NestJS - 后端框架
-- PostgreSQL - 数据库
-- Prisma - ORM
-- EJS - 模板引擎
-- JWT - 令牌生成和验证
-- TypeScript - 开发语言
-- Swagger - API 文档
+## 环境要求
 
-## 项目设置
+- Node.js >= 16
+- PostgreSQL >= 12
+- pnpm >= 8
+
+## 快速开始
 
 1. 克隆项目
 ```bash
@@ -63,7 +66,24 @@ pnpm install
 ```
 
 3. 配置环境变量
-创建 `.env` 文件并添加以下配置：
+```bash
+cp .env.example .env
+# 编辑 .env 文件配置数据库等信息
+```
+
+4. 初始化数据库
+```bash
+pnpm prisma generate
+pnpm prisma db push
+```
+
+5. 启动开发服务器
+```bash
+pnpm start:dev
+```
+
+## 环境变量配置
+
 ```env
 # 基础配置
 PORT=3000
@@ -76,202 +96,71 @@ DATABASE_URL="postgresql://postgres:123456@localhost:5432/nest_oauth?schema=publ
 JWT_SECRET="your-super-secret-key-here"
 
 # CORS配置
-CORS_ORIGIN="*"
+CORS_ORIGIN="http://localhost:3001"
 
-# Swagger配置
-SWAGGER_ENABLED=true
+# 会话配置
+SESSION_SECRET="your-session-secret"
 
 # OAuth配置
 OAUTH_TOKEN_EXPIRES_IN=3600
 OAUTH_REFRESH_TOKEN_EXPIRES_IN=2592000
 OAUTH_AUTH_CODE_EXPIRES_IN=600
-
-# 会话配置
-SESSION_SECRET="your-session-secret-here"
 ```
 
-4. 初始化数据库
-```bash
-npx prisma generate
-npx prisma db push
+## 安全配置说明
+
+### 开发环境
+
+在开发环境中，某些安全特性被适当放宽以方便开发：
+
+```typescript
+// main.ts
+app.use(helmet({
+  contentSecurityPolicy: false,  // 禁用 CSP
+  crossOriginEmbedderPolicy: false
+}));
 ```
 
-## 运行项目
+### 生产环境
 
-1. 开发模式
-```bash
-pnpm run start:dev
-```
+生产环境应启用完整的安全特性：
 
-2. 生产模式
-```bash
-pnpm run build
-pnpm run start:prod
-```
+1. 修改 main.ts 中的 Helmet 配置
+2. 启用 HTTPS
+3. 设置严格的 CORS 策略
+4. 配置安全的会话选项
 
 ## API 文档
 
-项目启动后，可以通过以下地址访问 Swagger API 文档：
-
+启动服务器后访问：
 ```
 http://localhost:3000/api
 ```
 
-API 文档包含以下主要部分：
-- OAuth 2.0 认证相关接口
-- 客户端应用管理接口
-- 用户管理接口
+## 测试
 
-每个接口都包含：
-- 详细的接口说明
-- 请求参数说明
-- 响应数据格式
-- 认证要求
-- 在线测试功能
-
-## API 响应格式
-
-所有 API 响应都遵循统一的格式：
-
-```typescript
-interface Response<T> {
-  data: T;          // 响应数据
-  code: number;     // 状态码
-  message: string;  // 响应消息
-  timestamp: string;// 时间戳
-}
+1. 单元测试
+```bash
+pnpm test
 ```
 
-## 错误处理
-
-系统使用全局异常过滤器处理错误，错误响应格式：
-
-```typescript
-interface ErrorResponse {
-  code: number;     // 错误码
-  timestamp: string;// 时间戳
-  path: string;     // 请求路径
-  method: string;   // 请求方法
-  message: string;  // 错误信息
-}
+2. E2E 测试
+```bash
+pnpm test:e2e
 ```
-
-## API 端点
-
-### OAuth 2.0 端点
-
-- `GET /oauth/authorize` - 授权端点
-- `POST /oauth/token` - 令牌端点
-- `POST /oauth/login` - 用户登录
-- `POST /oauth/authorize/decision` - 用户授权决定
-- `POST /oauth/revoke` - 令牌撤销
-- `POST /oauth/introspect` - 令牌信息查询
-
-### 应用管理端点
-
-- `GET /oauth/clients` - 获取应用列表
-- `GET /oauth/clients/new` - 创建新应用页面
-- `POST /oauth/clients` - 创建新应用
-- `GET /oauth/clients/:id` - 获取应用详情
-- `DELETE /oauth/clients/:id` - 删除应用
-
-### 用户管理端点
-
-- `POST /users` - 创建用户
-- `GET /users/:id` - 获取用户信息
-- `GET /users` - 获取用户列表
-
-## 测试流程
-
-1. 初始化测试用户
-```
-GET http://localhost:3000/oauth/init
-```
-
-2. 创建 OAuth 客户端应用
-```
-GET http://localhost:3000/oauth/clients/new
-```
-
-3. 测试授权流程
-```
-GET http://localhost:3001
-```
-
-## 目录结构
-
-```
-nest-oauth/
-├── src/
-│   ├── auth/           # 认证相关模块
-│   ├── oauth/          # OAuth 相关模块
-│   ├── users/          # 用户相关模块
-│   ├── common/         # 公共模块
-│   │   ├── filters/    # 异常过滤器
-│   │   ├── guards/     # 守卫
-│   │   ├── interceptors/# 拦截器
-│   │   └── middleware/ # 中间件
-│   ├── config/         # 配置模块
-│   ├── prisma/         # Prisma 配置
-│   └── views/          # EJS 模板
-├── prisma/
-│   └── schema.prisma   # 数据库模型
-└── client/             # 测试客户端
-```
-
-## 安全性考虑
-
-- 速率限制：
-  - 基于 IP 地址的请求限制
-  - 可配置的限制规则
-  - 防止暴力攻击
-- CSRF 保护：
-  - 所有表单请求的 CSRF 令牌验证
-  - 安全的令牌生成和验证
-- 安全头：
-  - 使用 Helmet 中间件
-  - XSS 防护
-  - 点击劫持防护
-  - 内容安全策略
-- 会话安全：
-  - 安全的会话配置
-  - HttpOnly Cookie
-  - 会话超时控制
-- 其他安全特性：
-  - bcrypt 密码加密
-  - JWT 令牌加密
-  - HTTPS 支持（生产环境）
-  - 输入验证和消毒
-  - 审计日志记录
-
-## 性能优化
-
-- 响应压缩
-- 响应缓存
-- 数据库索引优化
-- 连接池管理
-- 静态资源缓存
-- 负载均衡支持
 
 ## 部署
 
-1. 构建 Docker 镜像
+1. 构建生产版本
 ```bash
-docker build -t nest-oauth .
+pnpm build
 ```
 
-2. 运行容器
+2. 启动生产服务器
 ```bash
-docker run -p 3000:3000 nest-oauth
+pnpm start:prod
 ```
 
-## 贡献指南
-
-1. Fork 项目
-2. 创建特性分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
 
 ## 许可证
 
