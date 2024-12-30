@@ -1,24 +1,90 @@
-import { Controller, Get, Post, Body, Query, Render, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Render, Res, UnauthorizedException, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { AuthorizeDto, TokenDto, LoginDto, AuthorizeDecisionDto, RevokeTokenDto, TokenInfoDto } from '../dto/oauth.dto';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Session } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @ApiTags('auth')
 @Controller('oauth')
 export class OAuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(OAuthController.name);
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService
+  ) {
+    this.logger.log('OAuthController initialized');
+  }
 
   @ApiOperation({ summary: '获取授权页面' })
   @ApiResponse({ status: 200, description: '返回授权页面' })
   @Get('authorize')
-  @Render('authorize')
-  async authorize(@Query() query: AuthorizeDto) {
-    const client = await this.authService.validateClient(query.client_id);
-    return {
-      ...query,
-      client,
-    };
+  async authorize(
+    @Query('response_type') responseType: string,
+    @Query('client_id') clientId: string,
+    @Query('redirect_uri') redirectUri: string,
+    @Query('scope') scope: string,
+    @Query('state') state: string,
+    @Session() session: Record<string, any>,
+    @Res() res: Response
+  ) {
+    console.log('=== Start authorize method ===');
+    console.log('Query params:', { responseType, clientId, redirectUri, scope, state });
+    console.log('Session:', session);
+
+    try {
+      // 验证请求参数
+      if (!responseType || !clientId || !redirectUri) {
+        console.log('Missing required parameters');
+        throw new BadRequestException('Missing required parameters');
+      }
+
+      // 检查用户是否已登录
+      if (!session.userId) {
+        console.log('User not logged in, redirecting to login page');
+        return res.render('login', {
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          response_type: responseType,
+          scope: scope || '',
+          state: state || '',
+          error: null
+        });
+      }
+
+      // 验证客户端
+      const client = await this.prisma.client.findFirst({
+        where: { clientId }
+      });
+
+      if (!client) {
+        throw new BadRequestException('Invalid client_id');
+      }
+
+      // 验证重定向URI
+      if (!client.redirectUris.includes(redirectUri)) {
+        throw new BadRequestException('Invalid redirect_uri');
+      }
+
+      // 渲染授权页面，确保所有必要的变量都传递
+      return res.render('authorize', {
+        client,
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: responseType,
+        scope: scope || '',
+        state: state || '',
+        user: {
+          id: session.userId,
+          username: session.username
+        }
+      });
+    } catch (error) {
+      console.error('Authorization error:', error);
+      throw new InternalServerErrorException(error.message);
+    }
   }
 
   @ApiOperation({ summary: '获取登录页面' })
@@ -36,17 +102,49 @@ export class OAuthController {
   @ApiResponse({ status: 200, description: '登录成功' })
   @ApiResponse({ status: 401, description: '登录失败' })
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+  async login(
+    @Body() loginDto: any,
+    @Session() session: Record<string, any>,
+    @Body('client_id') clientId: string,
+    @Body('redirect_uri') redirectUri: string,
+    @Body('response_type') responseType: string,
+    @Body('scope') scope: string,
+    @Body('state') state: string,
+    @Res() res: Response
+  ) {
     try {
+      console.log('Login attempt:', { username: loginDto.username });
+      
+      // 1. 验证用户凭据
       const user = await this.authService.validatePassword(
         loginDto.username,
-        loginDto.password,
+        loginDto.password
       );
-      // TODO: 设置用户会话
-      return res.redirect('/oauth/authorize');
+
+      // 2. 设置会话
+      session.userId = user.id;
+      session.username = user.username;
+
+      // 3. 重定向回授权页面，使用表单中的隐藏字段值
+      const redirectUrl = `/oauth/authorize?${new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: responseType,
+        scope: scope || '',
+        state: state || ''
+      }).toString()}`;
+
+      console.log('Redirecting to:', redirectUrl);
+      return res.redirect(redirectUrl);
     } catch (error) {
+      // 4. 登录失败处理
       return res.render('login', {
         error: '用户名或密码错误',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: responseType,
+        scope: scope,
+        state: state
       });
     }
   }
@@ -54,66 +152,48 @@ export class OAuthController {
   @ApiOperation({ summary: '处理用户授权决定' })
   @ApiResponse({ status: 200, description: '授权处理成功' })
   @Post('authorize/decision')
-  async decision(@Body() body: AuthorizeDecisionDto, @Res() res: Response) {
-    const { allow, ...query } = body;
-
-    if (allow === 'false') {
-      const errorUrl = new URL(query.redirect_uri);
-      errorUrl.searchParams.append('error', 'access_denied');
-      if (query.state) {
-        errorUrl.searchParams.append('state', query.state);
-      }
-      return res.redirect(errorUrl.toString());
-    }
-
+  async decision(
+    @Body() body: any,
+    @Session() session: Record<string, any>,
+    @Res() res: Response
+  ) {
     try {
-      // 获取测试用户
-      const user = await this.authService.findUserByUsername('testuser');
+      const { allow, ...query } = body;
 
-      if (!user) {
-        throw new UnauthorizedException('User not found');
+      // 1. 检查用户是否已登录
+      if (!session.userId) {
+        throw new UnauthorizedException('User not logged in');
       }
 
-      switch (query.response_type) {
-        case 'code':
-          // 授权码模式
-          const code = await this.authService.generateAuthorizationCode(
-            user.id,
-            query.client_id,
-            query.scope,
-          );
-          const redirectUrl = new URL(query.redirect_uri);
-          redirectUrl.searchParams.append('code', code);
-          if (query.state) {
-            redirectUrl.searchParams.append('state', query.state);
-          }
-          return res.redirect(redirectUrl.toString());
-
-        case 'token':
-          // 简化模式
-          const accessToken = await this.authService.generateAccessToken({
-            sub: user.id,
-            clientId: query.client_id,
-            scope: query.scope,
-          });
-          const implicitRedirectUrl = new URL(query.redirect_uri);
-          implicitRedirectUrl.hash = `access_token=${accessToken}&token_type=bearer`;
-          if (query.state) {
-            implicitRedirectUrl.hash += `&state=${query.state}`;
-          }
-          return res.redirect(implicitRedirectUrl.toString());
-
-        default:
-          throw new UnauthorizedException('Invalid response type');
+      // 2. 如果用户拒绝授权
+      if (allow === 'false') {
+        const errorUrl = new URL(query.redirect_uri);
+        errorUrl.searchParams.append('error', 'access_denied');
+        if (query.state) {
+          errorUrl.searchParams.append('state', query.state);
+        }
+        return res.redirect(errorUrl.toString());
       }
-    } catch (error) {
-      console.error('Authorization error:', error);
-      const errorUrl = new URL(query.redirect_uri);
-      errorUrl.searchParams.append('error', 'server_error');
+
+      // 3. 生成授权码
+      const code = await this.authService.generateAuthorizationCode(
+        session.userId,
+        query.client_id,
+        query.scope
+      );
+
+      // 4. 构建重定向URL
+      const redirectUrl = new URL(query.redirect_uri);
+      redirectUrl.searchParams.append('code', code);
       if (query.state) {
-        errorUrl.searchParams.append('state', query.state);
+        redirectUrl.searchParams.append('state', query.state);
       }
-      return res.redirect(errorUrl.toString());
+
+      // 5. 重定向到客户端
+      return res.redirect(redirectUrl.toString());
+    } catch (error) {
+      console.error('Authorization decision error:', error);
+      throw new InternalServerErrorException(error.message);
     }
   }
 

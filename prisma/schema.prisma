@@ -23,10 +23,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // 关联
-  clients          Client[]          // 用户创建的客户端应用
-  authCodes        AuthCode[]        // 用户的授权码
-  accessTokens     AccessToken[]     // 用户的访问令牌
-  refreshTokens    RefreshToken[]    // 用户的刷新令牌
+  clients       Client[] // 用户创建的客户端应用
+  authCodes     AuthCode[] // 用户的授权码
+  accessTokens  AccessToken[] // 用户的访问令牌
+  refreshTokens RefreshToken[] // 用户的刷新令牌
 }
 
 // OAuth 客户端应用模型
@@ -35,17 +35,17 @@ model Client {
   clientId     String   @unique
   clientSecret String
   name         String
-  redirectUris String[] // 允许的重定向URI
-  grants       String[] // 允许的授权类型
-  userId       String   // 创建该客户端的用户ID
+  redirectUris String[]
+  grants       String[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // 关联
-  user          User           @relation(fields: [userId], references: [id])
-  authCodes     AuthCode[]     // 客户端的授权码
-  accessTokens  AccessToken[]  // 客户端的访问令牌
-  refreshTokens RefreshToken[] // 客户端的刷新令牌
+  // 关联字段
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+  authCodes     AuthCode[]
+  accessTokens  AccessToken[]
+  refreshTokens RefreshToken[]
 }
 
 // 授权码模型

@@ -8,8 +8,20 @@ import * as session from 'express-session';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
   
+  // 添加全局路由前缀（如果有）
+  // app.setGlobalPrefix('api');
+
+  // 打印路由信息
+  const server = app.getHttpServer();
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
   // 启用 Helmet 安全头，在开发环境中禁用 CSP
   app.use(
     helmet({

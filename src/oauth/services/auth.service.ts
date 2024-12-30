@@ -97,40 +97,54 @@ export class AuthService {
     }
 
     const token = this.jwtService.sign(payload);
+    
+    // 正确设置过期时间
+    const tokenExpiresIn = this.configService.get('oauth.tokenExpiresIn') || 3600; // 默认1小时
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + tokenExpiresIn);
+
     await this.prisma.accessToken.create({
       data: {
         token,
         userId: payload.sub === payload.clientId ? client.userId : payload.sub,
         clientId: client.id,
         scope: payload.scope,
-        expiresAt: new Date(Date.now() + this.configService.get('oauth.tokenExpiresIn') * 1000),
+        expiresAt, // 使用正确设置的过期时间
       },
     });
+
     return token;
   }
 
   // 生成授权码
-  async generateAuthorizationCode(userId: string, clientId: string, scope?: string): Promise<string> {
-    // 验证用户和客户端是否存在
-    const [user, client] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId } }),
-      this.prisma.client.findFirst({ where: { clientId } })
-    ]);
+  async generateAuthorizationCode(
+    userId: string,
+    clientId: string,
+    scope?: string
+  ): Promise<string> {
+    // 首先查找客户端获取其真实 id
+    const client = await this.prisma.client.findFirst({
+      where: { clientId }
+    });
 
-    if (!user || !client) {
-      throw new UnauthorizedException('Invalid user or client');
+    if (!client) {
+      throw new UnauthorizedException('Invalid client');
     }
 
     const code = uuidv4();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
     await this.prisma.authCode.create({
       data: {
         code,
-        userId: user.id,
+        userId,
         clientId: client.id,
-        scope,
-        expiresAt: new Date(Date.now() + this.configService.get('oauth.authCodeExpiresIn') * 1000),
+        scope: scope || '',
+        expiresAt,
       },
     });
+
     return code;
   }
 
