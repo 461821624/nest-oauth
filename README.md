@@ -13,6 +13,7 @@
 - 访问令牌和刷新令牌管理
 - 基于 TypeORM 的数据持久化
 - 使用 EJS 模板引擎的用户界面
+- Swagger API 文档
 
 ## 技术栈
 
@@ -23,6 +24,7 @@
 - Express - HTTP 服务器
 - bcrypt - 密码加密
 - express-session - 会话管理
+- Swagger - API 文档
 
 ## 快速开始
 
@@ -57,6 +59,11 @@ npm run build
 npm run start:prod
 ```
 
+服务器启动后，可以通过以下地址访问 Swagger API 文档：
+```
+http://localhost:3000/api
+```
+
 ### 5. 启动测试客户端
 
 ```bash
@@ -64,6 +71,22 @@ cd client
 npm install
 node index.js
 ```
+
+## API 文档
+
+项目集成了 Swagger API 文档，提供了详细的 API 说明和测试功能：
+
+- 访问地址：`http://localhost:3000/api`
+- 功能特点：
+  - 完整的 API 端点列表
+  - 详细的请求/响应模型
+  - 支持在线测试
+  - 支持 Bearer Token 认证
+  - 分类标签：
+    - auth: 认证相关
+    - oauth2: OAuth2.0 相关
+    - client: 客户端管理
+    - user: 用户管理
 
 ## 测试账号
 

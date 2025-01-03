@@ -4,14 +4,45 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as session from 'express-session';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
   
-  // 添加全局路由前缀（如果有）
-  // app.setGlobalPrefix('api');
+  // 配置 Swagger
+  const config = new DocumentBuilder()
+    .setTitle('OAuth2.0 授权服务器')
+    .setDescription('基于 NestJS 实现的 OAuth2.0 授权服务器 API 文档')
+    .setVersion('1.0')
+    .addTag('auth', '用户认证相关接口')
+    .addTag('oauth2', 'OAuth2.0 授权相关接口')
+    .addTag('client', '客户端应用管理接口')
+    .addTag('authorizations', '用户授权管理接口')
+    .addTag('user', '用户管理接口')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: '输入访问令牌',
+        in: 'header',
+      },
+      'access-token',
+    )
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'none',
+      filter: true,
+      showRequestDuration: true,
+    },
+  });
 
   // 打印路由信息
   const server = app.getHttpServer();
@@ -40,7 +71,7 @@ async function bootstrap() {
 
   // 配置 CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3030',
     credentials: true
   });
 
@@ -54,10 +85,7 @@ async function bootstrap() {
     }
   }));
 
-  // 配置静态文件服务
-  app.useStaticAssets(join(__dirname, '..', 'client'), {
-    prefix: '/client',
-  });
+
 
   await app.listen(3000);
 }

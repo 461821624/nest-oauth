@@ -2,12 +2,22 @@ import { Controller, Get, Post, Req, Res, Session, Body, Render } from '@nestjs/
 import { Request, Response } from 'express';
 import { OAuth2Service } from './oauth2.service';
 import * as OAuth2Server from 'oauth2-server';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 
+@ApiTags('oauth2')
 @Controller('oauth')
 export class OAuth2Controller {
   constructor(private readonly oauth2Service: OAuth2Service) {}
 
   @Get('authorize')
+  @ApiOperation({ summary: '获取授权码', description: '授权码模式的授权端点' })
+  @ApiQuery({ name: 'response_type', required: true, enum: ['code'], description: '响应类型' })
+  @ApiQuery({ name: 'client_id', required: true, description: '客户端ID' })
+  @ApiQuery({ name: 'redirect_uri', required: true, description: '回调地址' })
+  @ApiQuery({ name: 'scope', required: true, description: '请求的权限范围' })
+  @ApiQuery({ name: 'state', required: false, description: '状态值，用于防止CSRF攻击' })
+  @ApiResponse({ status: 302, description: '重定向到登录页面或授权确认页面' })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
   async authorize(@Req() req: Request, @Res() res: Response, @Session() session: any) {
     try {
       if (!session.userId) {
@@ -48,6 +58,21 @@ export class OAuth2Controller {
   }
 
   @Post('authorize/decision')
+  @ApiOperation({ summary: '处理授权决定', description: '处理用户的授权确认或拒绝' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        allow: {
+          type: 'string',
+          enum: ['true', 'false'],
+          description: '用户是否同意授权'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 302, description: '重定向到客户端，带有授权码或错误信息' })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
   async decision(@Body() body: any, @Session() session: any, @Res() res: Response) {
     try {
       const authRequest = session.authRequest;
@@ -124,6 +149,77 @@ export class OAuth2Controller {
   }
 
   @Post('token')
+  @ApiOperation({ summary: '获取访问令牌', description: '令牌端点，支持多种授权类型' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['grant_type'],
+      properties: {
+        grant_type: {
+          type: 'string',
+          enum: ['authorization_code', 'password', 'client_credentials', 'refresh_token'],
+          description: '授权类型'
+        },
+        code: {
+          type: 'string',
+          description: '授权码（authorization_code模式必需）'
+        },
+        redirect_uri: {
+          type: 'string',
+          description: '回调地址（authorization_code模式必需）'
+        },
+        username: {
+          type: 'string',
+          description: '用户名（password模式必需）'
+        },
+        password: {
+          type: 'string',
+          description: '密码（password模式必需）'
+        },
+        refresh_token: {
+          type: 'string',
+          description: '刷新令牌（refresh_token模式必需）'
+        },
+        scope: {
+          type: 'string',
+          description: '请求的权限范围'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: '成功获取访问令牌',
+    schema: {
+      type: 'object',
+      properties: {
+        access_token: {
+          type: 'string',
+          description: '访问令牌'
+        },
+        token_type: {
+          type: 'string',
+          example: 'Bearer',
+          description: '令牌类型'
+        },
+        expires_in: {
+          type: 'number',
+          example: 3600,
+          description: '过期时间（秒）'
+        },
+        refresh_token: {
+          type: 'string',
+          description: '刷新令牌'
+        },
+        scope: {
+          type: 'string',
+          description: '授权范围'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: '请求参数错误' })
+  @ApiResponse({ status: 401, description: '认证失败' })
   async token(@Req() req: Request, @Res() res: Response) {
     try {
       const request = new OAuth2Server.Request({
@@ -149,6 +245,55 @@ export class OAuth2Controller {
   }
 
   @Post('verify')
+  @ApiOperation({ summary: '验证访问令牌', description: '验证访问令牌的有效性并返回相关信息' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: {
+          type: 'string',
+          description: '要验证的访问令牌'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: '令牌验证成功',
+    schema: {
+      type: 'object',
+      properties: {
+        active: {
+          type: 'boolean',
+          example: true,
+          description: '令牌是否有效'
+        },
+        scope: {
+          type: 'string',
+          description: '令牌的权限范围'
+        },
+        client: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: '客户端ID' },
+            name: { type: 'string', description: '客户端名称' }
+          }
+        },
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: '用户ID' },
+            username: { type: 'string', description: '用户名' }
+          }
+        },
+        exp: {
+          type: 'number',
+          description: '过期时间戳'
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: '令牌无效或已过期' })
   async verify(@Req() req: Request, @Res() res: Response) {
     try {
       const request = new OAuth2Server.Request({
