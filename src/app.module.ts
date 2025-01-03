@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { OAuth2Module } from './oauth2/oauth2.module';
 import { ClientModule } from './client/client.module';
 import { AuthorizationModule } from './authorization/authorization.module';
+import { UserModule } from './user/user.module';
 import { User } from './entities/user.entity';
 import { Client } from './entities/client.entity';
 import { AccessToken } from './entities/access-token.entity';
@@ -28,6 +29,7 @@ import { AuthCode } from './entities/auth-code.entity';
     OAuth2Module,
     ClientModule,
     AuthorizationModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
