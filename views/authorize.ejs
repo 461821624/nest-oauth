@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>授权确认</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .scope-list {
+      margin: 20px 0;
+    }
+    .scope-item {
+      margin: 10px 0;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .allow-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .deny-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>授权请求</h1>
+    <p><strong><%= client.name %></strong> 请求访问您的账户</p>
+    
+    <div class="scope-list">
+      <h3>请求的权限：</h3>
+      <% scopes.forEach(function(scope) { %>
+        <div class="scope-item">
+          <% if (scope === 'read') { %>
+            ✓ 读取您的基本信息
+          <% } else if (scope === 'write') { %>
+            ✓ 修改您的基本信息
+          <% } else { %>
+            ✓ <%= scope %>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+
+    <div class="buttons">
+      <form action="/oauth/authorize/decision" method="post">
+        <input type="hidden" name="client_id" value="<%= client.clientId %>">
+        <input type="hidden" name="redirect_uri" value="<%= redirectUri %>">
+        <input type="hidden" name="response_type" value="<%= authRequest.response_type %>">
+        <input type="hidden" name="scope" value="<%= scopeString %>">
+        <input type="hidden" name="state" value="<%= state %>">
+        <button type="submit" name="allow" value="true" class="allow-btn">允许</button>
+        <button type="submit" name="allow" value="false" class="deny-btn">拒绝</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html> 

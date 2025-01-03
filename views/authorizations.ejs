@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>应用授权管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .auth-list {
+      margin: 20px 0;
+    }
+    .auth-item {
+      background-color: white;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+    .scope-list {
+      margin: 10px 0;
+    }
+    .scope-item {
+      display: inline-block;
+      background-color: #e9ecef;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 2px;
+    }
+    .timestamp {
+      color: #6c757d;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>应用授权管理</h1>
+    
+    <div class="auth-list">
+      <% if (authorizations.length === 0) { %>
+        <p>您还没有授权任何应用。</p>
+      <% } else { %>
+        <% authorizations.forEach(function(auth) { %>
+          <div class="auth-item">
+            <h3><%= auth.client.name %></h3>
+            <p>客户端ID: <%= auth.client.clientId %></p>
+            
+            <div class="scope-list">
+              <h4>已授权的权限：</h4>
+              <% auth.scope.forEach(function(scope) { %>
+                <span class="scope-item">
+                  <% if (scope === 'read') { %>
+                    读取您的基本信息
+                  <% } else if (scope === 'write') { %>
+                    修改您的基本信息
+                  <% } else { %>
+                    <%= scope %>
+                  <% } %>
+                </span>
+              <% }); %>
+            </div>
+
+            <p class="timestamp">
+              授权时间: <%= new Date(auth.createdAt).toLocaleString() %><br>
+              最后使用: <%= new Date(auth.lastUsed).toLocaleString() %>
+            </p>
+
+            <button class="btn btn-danger" onclick="revokeAccess('<%= auth.client.clientId %>')">
+              撤销授权
+            </button>
+          </div>
+        <% }); %>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    async function revokeAccess(clientId) {
+      if (!confirm('确定要撤销这个应用的授权吗？这将使该应用无法继续访问您的账户。')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/authorizations/${clientId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('撤销授权失败');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('撤销授权失败');
+      }
+    }
+  </script>
+</body>
+</html> 

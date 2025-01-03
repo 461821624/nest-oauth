@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>客户端应用管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .client-list {
+      margin: 20px 0;
+    }
+    .client-item {
+      background-color: white;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+    .btn-warning {
+      background-color: #ffc107;
+      color: black;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>客户端应用管理</h1>
+    
+    <button class="btn btn-primary" onclick="showCreateForm()">创建新应用</button>
+
+    <div id="createForm" style="display: none;" class="container">
+      <h2>创建新应用</h2>
+      <form onsubmit="createClient(event)">
+        <div class="form-group">
+          <label>应用名称</label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="form-group">
+          <label>客户端ID</label>
+          <input type="text" name="clientId" required>
+        </div>
+        <div class="form-group">
+          <label>回调地址（多个地址用逗号分隔）</label>
+          <input type="text" name="redirectUris" required>
+        </div>
+        <div class="form-group">
+          <label>授权类型（多个类型用逗号分隔）</label>
+          <input type="text" name="grants" value="authorization_code,refresh_token" required>
+        </div>
+        <div class="form-group">
+          <label>权限范围（多个范围用逗号分隔）</label>
+          <input type="text" name="scope" value="read,write" required>
+        </div>
+        <button type="submit" class="btn btn-primary">创建</button>
+        <button type="button" class="btn btn-danger" onclick="hideCreateForm()">取消</button>
+      </form>
+    </div>
+
+    <div class="client-list">
+      <% clients.forEach(function(client) { %>
+        <div class="client-item">
+          <h3><%= client.name %></h3>
+          <p>客户端ID: <%= client.clientId %></p>
+          <p>客户端密钥: <%= client.clientSecret %></p>
+          <p>回调地址: <%= client.redirectUris.join(', ') %></p>
+          <p>授权类型: <%= client.grants.join(', ') %></p>
+          <p>权限范围: <%= client.scope.join(', ') %></p>
+          <button class="btn btn-warning" onclick="regenerateSecret('<%= client.id %>')">重新生成密钥</button>
+          <button class="btn btn-danger" onclick="deleteClient('<%= client.id %>')">删除</button>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <script>
+    function showCreateForm() {
+      document.getElementById('createForm').style.display = 'block';
+    }
+
+    function hideCreateForm() {
+      document.getElementById('createForm').style.display = 'none';
+    }
+
+    async function createClient(event) {
+      event.preventDefault();
+      const form = event.target;
+      const data = {
+        name: form.name.value,
+        clientId: form.clientId.value,
+        redirectUris: form.redirectUris.value,
+        grants: form.grants.value,
+        scope: form.scope.value
+      };
+
+      try {
+        const response = await fetch('/clients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('创建失败');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('创建失败');
+      }
+    }
+
+    async function regenerateSecret(id) {
+      if (!confirm('确定要重新生成密钥吗？这将使当前的密钥失效。')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/clients/${id}/regenerate-secret`, {
+          method: 'POST'
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('重新生成密钥失败');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('重新生成密钥失败');
+      }
+    }
+
+    async function deleteClient(id) {
+      if (!confirm('确定要删除这个应用吗？这将撤销所有相关的访问令牌。')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/clients/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('删除失败');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('删除失败');
+      }
+    }
+  </script>
+</body>
+</html> 
