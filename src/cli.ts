@@ -17,7 +17,9 @@ async function bootstrap() {
     const password = await bcrypt.hash('123456', 10);
     await userRepository.save({
       username: 'testuser',
-      password
+      password,
+      email: 'testuser@example.com',
+      nickname: 'Test User'
     });
 
     // 创建测试客户端
