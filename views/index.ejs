@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth2.0 授权服务器</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.1/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .welcome-container {
+      max-width: 800px;
+      margin: 100px auto;
+      text-align: center;
+    }
+    .welcome-title {
+      font-size: 48px;
+      font-weight: bold;
+      color: #0d6efd;
+      margin-bottom: 30px;
+    }
+    .welcome-description {
+      font-size: 18px;
+      color: #6c757d;
+      margin-bottom: 40px;
+    }
+    .feature-list {
+      text-align: left;
+      margin: 40px 0;
+    }
+    .feature-item {
+      margin: 15px 0;
+    }
+    .action-buttons {
+      margin-top: 40px;
+    }
+    .action-buttons .btn {
+      margin: 0 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="welcome-container">
+      <h1 class="welcome-title">OAuth2.0 授权服务器</h1>
+      <div class="welcome-description">
+        基于 NestJS 实现的完整 OAuth2.0 授权服务器，支持多种授权模式。
+      </div>
+      <div class="feature-list">
+        <h3>主要功能：</h3>
+        <ul>
+          <li class="feature-item">支持授权码模式和密码模式</li>
+          <li class="feature-item">完整的用户认证系统</li>
+          <li class="feature-item">客户端应用管理</li>
+          <li class="feature-item">用户授权管理</li>
+          <li class="feature-item">访问令牌和刷新令牌管理</li>
+        </ul>
+      </div>
+      <div class="action-buttons">
+        <a href="/auth/login" class="btn btn-primary">登录</a>
+        <a href="/auth/register" class="btn btn-outline-primary">注册</a>
+        <a href="/api" class="btn btn-outline-secondary">API 文档</a>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.1/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
